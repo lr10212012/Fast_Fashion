@@ -1,0 +1,26 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  background: #fffef7;
+  overflow: hidden;
+}
+
+.map-iframe {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: calc(100% - 60px);
+  border: 0;
+  z-index: 1;
+}
+
+@media (max-width: 860px) {
+  .map-iframe {
+    top: 48px;
+    height: calc(100% - 48px);
+  }
+}

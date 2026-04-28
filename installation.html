@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Installation — A Solo Journey</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/nav.css">
+<link rel="stylesheet" href="css/installation.css">
+</head>
+<body>
+  <nav class="topnav">
+    <a href="index.html" class="brand">Fast Fashion: The End Point</a>
+    <div class="links">
+      <a href="index.html">Prologue</a>
+      <a href="main.html">Essay</a>
+      <a href="map.html">Map</a>
+      <a href="installation.html" class="is-active">Installation</a>
+    </div>
+    <div class="meta">Chapter · 03</div>
+  </nav>
+
+  <div class="scene">
+    <canvas id="three-canvas"></canvas>
+  </div>
+
+  <div class="scene-overlay">
+    <div class="head">
+      <h1>Project Introduction</h1>
+    </div>
+    <div class="foot">
+      <div class="caption">
+        <p>Our group project focuses on the material and information flows of fast fashion waste in global logistics and digital media, exploring its state of ecology in the Global South. As media practitioners, we record the material transportation trajectories of the fast fashion supply chain by building a digital archive (website and digital mapping) and choosing images, data, and prose poetry as information carriers.</p>
+        <p>When we place ourselves within this global chain, we also pay attention to the digital space parallel to this transport trajectory. The social media often uses aesthetic rhetoric to filter out the real trauma in the Global South. This visual landscape not only creates an unequal division of labor through data control but also disconnects individual actions from their material consequences in remote areas. We must ask: how does a single click in the Global North media platform trigger a chain of pollution in the Global South?</p>
+        <p>Overall, through multimedia mapping, this website reveals the covered-up, friendship-like symbiotic and entangled relationships between humans, technology, and non-human ecologies behind seemingly smooth digital consumption, aiming to present the ecological traces and damaged local memories that have been obscured by consumerist culture.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="loader" id="loader">
+    <span>Loading</span>
+    <span class="bar"></span>
+    <span id="loader-pct">0%</span>
+  </div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+    const canvas = document.getElementById('three-canvas');
+    const loader = document.getElementById('loader');
+    const pctEl  = document.getElementById('loader-pct');
+
+    const scene = new THREE.Scene();
+    scene.background = null;
+
+    const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 500);
+    camera.position.set(3, 2, 4);
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    function getSize() {
+      const r = canvas.parentElement.getBoundingClientRect();
+      return { w: r.width, h: r.height };
+    }
+    function applySize() {
+      const { w, h } = getSize();
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 0.65;
+
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    pmrem.compileEquirectangularShader();
+    const envScene = new RoomEnvironment();
+    envScene.background = new THREE.Color(0xffffff);
+    scene.environment = pmrem.fromScene(envScene, 0.04).texture;
+
+    const hemi = new THREE.HemisphereLight(0xffffff, 0xe8e2d4, 0.45);
+    scene.add(hemi);
+    const key = new THREE.DirectionalLight(0xffffff, 0.85);
+    key.position.set(4, 6, 4);
+    scene.add(key);
+    const fill = new THREE.DirectionalLight(0xffffff, 0.35);
+    fill.position.set(-5, 2, -3);
+    scene.add(fill);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.25));
+
+    const controls = new OrbitControls(camera, canvas);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.minDistance = 1.5;
+    controls.maxDistance = 20;
+    controls.target.set(0, 0, 0);
+
+    let model = null;
+    let pivot = null;
+
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
+    const gltfLoader = new GLTFLoader();
+    gltfLoader.setDRACOLoader(dracoLoader);
+    gltfLoader.load(
+      'model/2.glb',
+      (gltf) => {
+        model = gltf.scene;
+
+        model.traverse((o) => {
+          if (o.isMesh && o.material) {
+            const mats = Array.isArray(o.material) ? o.material : [o.material];
+            mats.forEach((m) => {
+              if ('metalness' in m) m.metalness = Math.min(m.metalness ?? 0, 0.15);
+              if ('roughness' in m) m.roughness = Math.max(m.roughness ?? 1, 0.7);
+              if (m.color) m.color.multiplyScalar(1.15);
+              m.needsUpdate = true;
+            });
+          }
+        });
+
+        const box = new THREE.Box3().setFromObject(model);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        model.position.sub(center);
+
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const scale = 10.8 / maxDim;
+
+        pivot = new THREE.Group();
+        pivot.add(model);
+        pivot.scale.setScalar(scale);
+        scene.add(pivot);
+
+        const fitDist = 8.8 / Math.tan((camera.fov * Math.PI) / 360) * 0.75;
+        camera.position.set(fitDist * 0.85, fitDist * 0.45, fitDist);
+        controls.target.set(0, 0, 0);
+        controls.update();
+
+        loader.classList.add('is-hidden');
+      },
+      (xhr) => {
+        if (xhr.lengthComputable) {
+          const pct = Math.round((xhr.loaded / xhr.total) * 100);
+          pctEl.textContent = pct + '%';
+        }
+      },
+      (err) => {
+        console.error(err);
+        pctEl.textContent = 'Error';
+      }
+    );
+
+    applySize();
+    window.addEventListener('resize', applySize);
+
+    const clock = new THREE.Clock();
+    function tick() {
+      const dt = clock.getDelta();
+      if (pivot) pivot.rotation.y += dt * 0.15;
+      controls.update();
+      renderer.render(scene, camera);
+      requestAnimationFrame(tick);
+    }
+    tick();
+  </script>
+</body>
+</html>
